@@ -85,6 +85,48 @@
   .footer{font-size:9px;margin-top:9px}
 }
 @media(max-width:355px){.levels{grid-template-columns:repeat(4,minmax(0,1fr))}.coord-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.loc-summary{font-size:10px;line-height:1.3;color:var(--muted);padding:2px 0 5px}
+/* V5: a single vertical level sidebar; the browser page is the only scroll surface. */
+@media(max-width:860px){
+  .layout{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:start;column-gap:0;overflow:visible;height:auto!important;min-height:0!important;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+  .levels{display:flex;flex-direction:column;gap:0;align-self:stretch;overflow:visible;margin:0;padding:0;border-right:1px solid var(--line);background:var(--panel)}
+  .levels .section-cap{display:block;padding:9px 7px 6px;font-size:9px;line-height:1.2;letter-spacing:.04em;border-bottom:1px solid var(--line2)}
+  .level{display:flex;width:100%;min-height:29px;justify-content:space-between;align-items:center;gap:2px;margin:0;padding:6px 5px;border:0;border-bottom:1px solid var(--line2);border-radius:0;background:transparent;font-size:10px;line-height:1.25;text-align:left}
+  .level small{font-size:9px}
+  .level.selected{background:var(--accent);color:var(--on-accent)}
+  .middle{display:block;min-width:0;background:var(--panel);overflow:visible;align-self:start}
+  .middle.short-list{position:sticky;top:8px}
+  .items{height:auto;overflow:visible}
+  .list-header{position:static;padding:9px 8px;font-size:10.5px;align-items:baseline;gap:4px;flex-wrap:wrap;background:var(--panel2)}
+  .list-header small{font-size:9px}
+  .item{padding:6px 7px;min-height:47px;gap:7px}
+  .item-name{font-size:11.5px}
+  .item-sub{font-size:9px}
+  /* One place for returning: the fixed-on-scroll button at the top of the detail. */
+  .detail-toolbar{justify-content:flex-start;padding:calc(8px + env(safe-area-inset-top)) 10px 7px}
+  .detail-toolbar .toolbar-back{padding:7px 11px;font-size:11px}
+  /* Gathering/fishing: denser area headings and X/Y rows without losing tap-to-copy. */
+  .detail-body{padding:8px 11px 22px}
+  .stats{margin-bottom:7px}
+  .section-title{font-size:11px;padding-bottom:5px;margin:3px 0 4px}
+  .loc-group{padding:4px 0 5px}
+  .loc-group-title{font-size:10.5px;line-height:1.3}
+  .loc-group-sub{font-size:8.5px;line-height:1.25;margin:0 0 3px}
+  .location{padding:4px 0 6px}
+  .loc-title{font-size:10.5px;line-height:1.3}
+  .loc-sub{font-size:9px;line-height:1.3;margin-top:2px}
+  .coord-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+  .coord-grid .coord{display:block;padding:4px 1px;min-height:25px;line-height:1.15;font-size:9.5px;letter-spacing:-.02em;border-radius:3px;font-weight:600;white-space:nowrap}
+  .coord-grid .coord small{font-size:8px;margin-right:1px}
+}
+@media(max-width:355px){
+  .layout{grid-template-columns:69px minmax(0,1fr)}
+  .level{font-size:9.5px;padding:6px 4px}
+  .coord-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:861px){
+  .detail-toolbar{justify-content:flex-start}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 </style>
@@ -201,7 +243,7 @@ const levelBucket=x=>Math.max(0,Math.floor(((x.level||1)-1)/5));
 function visibleData(){let r=groupData();if(s.search){const q=s.search.toLocaleLowerCase();r=r.filter(x=>nameOf(x.item).toLocaleLowerCase().includes(q)||String(x.item)===q)}else r=r.filter(x=>levelBucket(x)===s.range);if(s.favsOnly)r=r.filter(x=>favorites.has(favKey(x)));return r.sort((a,b)=>a.level-b.level||nameOf(a.item).localeCompare(nameOf(b.item),'zh-CN'))}
 function renderJobs(){$('jobs').innerHTML=jobNames().map((name,j)=>`<button class="job ${s.job===j?'active':''}" data-job="${j}">${esc(name)}</button>`).join('');$('jobs').querySelectorAll('[data-job]').forEach(b=>b.onclick=()=>{s.job=num(b.dataset.job);s.range=0;s.search='';$('search').value='';s.selected=null;closeDrawer();render()})}
 function renderLevels(){const a=groupData(),m=Math.max(100,...a.map(x=>x.level));let html='<div class="section-cap">等级</div>';for(let n=0;n<Math.ceil(m/5);n++){const count=a.filter(x=>levelBucket(x)===n).length;if(!count)continue;html+=`<button class="level ${s.range===n&&!s.search?'selected':''}" data-range="${n}"><span>${n*5+1}–${Math.min(m,n*5+5)}</span><small>${count}</small></button>`}$('levels').innerHTML=html;$('levels').querySelectorAll('[data-range]').forEach(b=>b.onclick=()=>{s.range=num(b.dataset.range);s.search='';$('search').value='';s.selected=null;closeDrawer();render()})}
-function renderItems(){const a=visibleData(),j=jobNames()[s.job]||'';$('listTitle').textContent=s.search?'搜索结果':`${j} · Lv.${s.range*5+1}–${s.range*5+5}`;const ready=s.tab==='craft'?s.loaded:(s.job===2?s.fishLoaded:s.gatherLoaded);$('listCount').textContent=ready?`${a.length} 项`:(s.loadFailed?'失败':'载入中');$('rangeHint').textContent=s.tab==='craft'?'制作配方':s.job===2?'钓场与鱼饵':'采集坐标';if(!ready){$('itemList').innerHTML=s.loadFailed?'<div class="empty">数据加载失败。请点击上方「重试」重新读取。</div>':'<div class="empty"><div class="loading"></div>正在读取游戏数据</div>';return}if(!a.length){$('itemList').innerHTML=`<div class="empty"><div class="empty-symbol">◇</div>暂无匹配的物品<p>可搜索名称或选择其他等级</p></div>`;return}$('itemList').innerHTML=a.map(x=>`<button class="item ${s.selected?.data===x?'selected':''}" data-id="${x.id}">${iconHtml(x.item)}<span class="item-info"><span class="item-name">${esc(nameOf(x.item))}</span><span class="item-sub" style="display:block">Lv.${x.level}${x.stars?' ★'.repeat(Math.min(4,x.stars)):''} · ${s.tab==='craft'?(x.qty>1?'每次产出 '+x.qty+' 件':'配方'):x.kind==='fish'?'钓场 '+x.locations.length+' 处':'采集'}</span></span><span class="item-arr">›</span></button>`).join('');$('itemList').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{const d=a.find(x=>x.id===num(b.dataset.id));if(d)selectDetail(d)})}
+function renderItems(){const a=visibleData(),j=jobNames()[s.job]||'';$('listTitle').textContent=s.search?'搜索结果':`${j} · Lv.${s.range*5+1}–${s.range*5+5}`;const ready=s.tab==='craft'?s.loaded:(s.job===2?s.fishLoaded:s.gatherLoaded);document.querySelector('.middle').classList.toggle('short-list',ready&&a.length<=9&&!s.search);$('listCount').textContent=ready?`${a.length} 项`:(s.loadFailed?'失败':'载入中');$('rangeHint').textContent=s.tab==='craft'?'制作配方':s.job===2?'钓场与鱼饵':'采集坐标';if(!ready){$('itemList').innerHTML=s.loadFailed?'<div class="empty">数据加载失败。请点击上方「重试」重新读取。</div>':'<div class="empty"><div class="loading"></div>正在读取游戏数据</div>';return}if(!a.length){$('itemList').innerHTML=`<div class="empty"><div class="empty-symbol">◇</div>暂无匹配的物品<p>可搜索名称或选择其他等级</p></div>`;return}$('itemList').innerHTML=a.map(x=>`<button class="item ${s.selected?.data===x?'selected':''}" data-id="${x.id}">${iconHtml(x.item)}<span class="item-info"><span class="item-name">${esc(nameOf(x.item))}</span><span class="item-sub" style="display:block">Lv.${x.level}${x.stars?' ★'.repeat(Math.min(4,x.stars)):''} · ${s.tab==='craft'?(x.qty>1?'每次产出 '+x.qty+' 件':'配方'):x.kind==='fish'?'钓场 '+x.locations.length+' 处':'采集'}</span></span><span class="item-arr">›</span></button>`).join('');$('itemList').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{const d=a.find(x=>x.id===num(b.dataset.id));if(d)selectDetail(d)})}
 function render(){for(const t of ['craft','gather'])$('tab'+t[0].toUpperCase()+t.slice(1)).classList.toggle('active',s.tab===t);$('favoriteFilter').classList.toggle('active',s.favsOnly);$('favoriteFilter').textContent=s.favsOnly?'★ 仅收藏':'☆ 收藏';renderJobs();renderLevels();renderItems();if(s.selected)renderDetail(s.selected.data);else emptyDetail()}
 function emptyDetail(){$('detail').innerHTML='<div class="empty" style="margin:auto"><div class="empty-symbol">◇</div><div style="font-weight:650;color:#eee">物品详情</div>先选择等级，再点击物品查看详情。</div>'}
 function closeDrawer(){$('detail').classList.remove('show');$('backdrop').classList.remove('show');document.body.classList.remove('detail-open')}
@@ -218,19 +260,19 @@ function locationHtml(x,kind){const coord=x.x!=null&&x.y!=null?coordButton(x):'<
 function groupedGatherLocations(locs){const groups=new Map();for(const x of locs){const key=[x.label,x.method].join('\t');if(!groups.has(key))groups.set(key,{label:x.label,method:x.method,level:x.level,coords:[],missing:0,unique:new Set()});const g=groups.get(key);g.level=Math.min(g.level,x.level);if(x.x!=null&&x.y!=null){const pair=x.x+':'+x.y;if(!g.unique.has(pair)){g.unique.add(pair);g.coords.push(x)}}else g.missing++}
 return [...groups.values()].map(g=>`<section class="loc-group"><div class="loc-group-title">${esc(g.label||'未标注地点')}</div><div class="loc-group-sub">${esc(g.method||'采集')} · Lv.${g.level} · ${g.coords.length} 处坐标</div><div class="coord-grid">${g.coords.map(coordButton).join('')||'<div class="no-coord">暂无可靠坐标</div>'}</div>${g.missing?`<div class="loc-sub">另有 ${g.missing} 条未记录坐标的采集点</div>`:''}</section>`).join('')}
 function fishLocations(d){return d.locations.map(loc=>{const sources=s.baitByFish[String(d.item)]||[];const baits=[...new Set(sources.filter(x=>num(x.spot)===loc.spot&&num(x.bait)>0&&hasName(num(x.bait))).map(x=>num(x.bait)))].slice(0,7);return {...loc,baits}})}
-function detailHeader(d){const type=d.kind==='craft'?'制作笔记':'采集笔记';const canBack=s.history.length>0;return `<div class="detail-toolbar"><button id="detailBackTop" class="toolbar-back ${canBack?'important':''}">${canBack?'← 返回上一项':'← 返回列表'}</button><button class="toolbar-close" id="detailClose" aria-label="关闭详情">×</button></div><div class="detail-title-bar">${iconHtml(d.item)}<div style="flex:1;min-width:0"><h2>${esc(nameOf(d.item))}</h2><div class="subtitle">${type}　/　Lv.${d.level}${d.stars?' ★'.repeat(Math.min(4,d.stars)):''}</div></div></div>`}
+function detailHeader(d){const type=d.kind==='craft'?'制作笔记':'采集笔记';const canBack=s.history.length>0;return `<div class="detail-toolbar"><button id="detailBackTop" class="toolbar-back ${canBack?'important':''}">${canBack?'← 返回上一项':'← 返回列表'}</button></div><div class="detail-title-bar">${iconHtml(d.item)}<div style="flex:1;min-width:0"><h2>${esc(nameOf(d.item))}</h2><div class="subtitle">${type}　/　Lv.${d.level}${d.stars?' ★'.repeat(Math.min(4,d.stars)):''}</div></div></div>`}
 function renderDetail(d){let html=detailHeader(d);if(d.kind==='craft'){
 html+=`<div class="detail-body"><div class="stats"><div class="stat"><span>制作等级</span><b>${d.level}</b></div><div class="stat"><span>成品数量</span><b>${d.qty}</b></div><div class="stat"><span>材料种类</span><b>${d.mats.length}</b></div></div><div class="section-title">所需材料 <div class="amount">制作次数 <button id="minus" aria-label="减少制作次数">−</button><strong id="times">${s.amount}</strong><button id="plus" aria-label="增加制作次数">+</button></div></div>`;
 html+=d.mats.length?d.mats.map(m=>{const sources=findSources(m.id);const sourceHint=sources.length?({'gather':'点击查看采集地点','fish':'点击查看钓场','craft':'点击查看原料配方'}[sources[0].kind]):'当前数据无对应获取途径';return `<div class="material">${iconHtml(m.id)}<div class="material-main"><button data-matid="${m.id}">${esc(nameOf(m.id))} ↗</button><div class="mat-note">${sourceHint}</div></div><span class="qty" data-qty="${m.qty}">×${m.qty*s.amount}</span></div>`}).join(''):'<div class="nodata">这条配方未列出普通材料。</div>';
-html+=`<div class="actions">${s.history.length?'<button class="action primary" id="back">← 返回上一项</button>':''}<button class="action" id="copy">复制材料清单</button><button class="action" id="fav">${favorites.has(favKey(d))?'★ 已收藏':'☆ 收藏'}</button></div><div class="tip">点击材料名称可跳转至采集笔记、钓鱼笔记或制作配方。无法在数据源中定位的原料会提示原因，不会编造坐标。</div></div>`;
-}else{const locs=d.kind==='fish'?fishLocations(d):d.locations;const pos=locs.filter(x=>x.x!=null&&x.y!=null).length;html+=`<div class="detail-body"><div class="stats"><div class="stat"><span>物品等级</span><b>${d.level}</b></div><div class="stat"><span>地点记录</span><b>${locs.length}</b></div><div class="stat"><span>已知坐标</span><b>${pos}</b></div></div><div class="section-title">${d.kind==='gather'?'采集位置':'钓场位置'}</div>`;
+html+=`<div class="actions"><button class="action" id="copy">复制材料清单</button><button class="action" id="fav">${favorites.has(favKey(d))?'★ 已收藏':'☆ 收藏'}</button></div><div class="tip">点击材料名称可跳转至采集笔记、钓鱼笔记或制作配方。无法在数据源中定位的原料会提示原因，不会编造坐标。</div></div>`;
+}else{const locs=d.kind==='fish'?fishLocations(d):d.locations;const pos=locs.filter(x=>x.x!=null&&x.y!=null).length;html+=`<div class="detail-body"><div class="loc-summary">Lv.${d.level} · 地点记录 ${locs.length} · 已知坐标 ${pos}</div><div class="section-title">${d.kind==='gather'?'采集位置':'钓场位置'}</div>`;
 html+=locs.length?(d.kind==='gather'?groupedGatherLocations(locs):locs.map(x=>locationHtml(x,d.kind)).join('')):'<div class="nodata">暂无对应地点记录。</div>';
-html+=`<div class="actions">${s.history.length?'<button class="action primary" id="back">← 返回上一项</button>':''}<button class="action" id="fav">${favorites.has(favKey(d))?'★ 已收藏':'☆ 收藏'}</button></div>`;
+html+=`<div class="actions"><button class="action" id="fav">${favorites.has(favKey(d))?'★ 已收藏':'☆ 收藏'}</button></div>`;
 if(d.kind==='fish')html+='<div class="tip">坐标是钓场参考中心；鱼饵取自社区补充资料，并非保证钓获。稀有鱼可能还有天气、时间、前置钓法等限制，本页暂不提供完整条件。</div>';
 else html+='<div class="tip">节点显示的是采集区域参考坐标，不是每个可刷新点。特殊采集物还可能受艾欧泽亚时间和传承录限制。缺少坐标时不会给出猜测。</div>';
 const cross=findSources(d.item).filter(x=>x.kind!==d.kind);if(cross.length)html+=`<div class="more-sources">${cross.map((x,i)=>`<button data-cross="${i}">查看${x.kind==='craft'?'制作':'其他'}记录 →</button>`).join('')}</div>`;
 html+='</div>'}
-$('detail').innerHTML=html;$('detailClose').onclick=closeDrawer;$('detailBackTop').onclick=s.history.length?goBack:closeDrawer;$('fav').onclick=()=>toggleFav(d);$('detail').querySelectorAll('[data-xy]').forEach(b=>b.onclick=async()=>{const [x,y]=b.dataset.xy.split(',');const txt=`X: ${x} Y: ${y}`;try{await navigator.clipboard.writeText(txt);b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),850)}catch{window.prompt('复制坐标',txt)}});if($('back'))$('back').onclick=goBack;
+$('detail').innerHTML=html;$('detailBackTop').onclick=s.history.length?goBack:closeDrawer;$('fav').onclick=()=>toggleFav(d);$('detail').querySelectorAll('[data-xy]').forEach(b=>b.onclick=async()=>{const [x,y]=b.dataset.xy.split(',');const txt=`X: ${x} Y: ${y}`;try{await navigator.clipboard.writeText(txt);b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),850)}catch{window.prompt('复制坐标',txt)}});
 if(d.kind==='craft'){
 $('minus').onclick=()=>changeAmount(-1);$('plus').onclick=()=>changeAmount(1);$('copy').onclick=async()=>{const txt=[`${nameOf(d.item)} ×${d.qty*s.amount}`,...d.mats.map(m=>`${nameOf(m.id)} ×${m.qty*s.amount}`)].join('\n');try{await navigator.clipboard.writeText(txt);$('copy').textContent='✓ 已复制'}catch{window.prompt('请长按复制材料清单：',txt)}};
 $('detail').querySelectorAll('[data-matid]').forEach(b=>b.onclick=()=>{const id=num(b.dataset.matid),found=findSources(id);if(found.length)goTo(found[0]);else{const note=b.parentNode.querySelector('.mat-note');note.textContent='该物品可能来自商人、怪物或其他途径；无法在笔记中跳转。'}})
